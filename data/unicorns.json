@@ -1,0 +1,22 @@
+{
+    "name": "Unicorns",
+    "children" : [
+        {"name": "Snapchat", "price": 10000000000,  "date":2012},
+        {"name": "Uber",     "price": 41200000000,  "date":2009},
+        {"name": "Dropbox",  "price": 10000000000,  "date":2007},
+        {"name": "Spotify",  "price": 4000000000,   "date":2006},
+        {"name": "SpaceX",   "price": 12000000000,  "date":2002},
+        {"name": "Pinterest","price": 5000000000,   "date":2008},
+        {"name": "Palantir", "price": 15000000000,  "date":2004},
+        {"name": "Xiaomi",   "price": 46000000000,  "date":2010},
+        {"name": "Airbnb",   "price": 10000000000,  "date":2008},
+        {"name": "Square",   "price": 6000000000,   "date":2009},
+        {"name": "Cloudera", "price": 4100000000,   "date":2008},
+        {"name": "Slack",    "price": 1100000000,   "date":2009},
+        {"name": "Evernote", "price": 1000000000,   "date":2005},
+        {"name": "Shazam",   "price": 1000000000,   "date":2002},
+        {"name": "Flipkart", "price": 11000000000,  "date":2007},
+        {"name": "Stripe",   "price": 3500000000,   "date":2009},
+        {"name": "Jawbone",  "price": 3300000000,   "date":1999},
+        {"name": "Lyft",     "price": 2500000000,   "date":2002}
+]}

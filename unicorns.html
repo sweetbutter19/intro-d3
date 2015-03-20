@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>Unicorns</title>
+    <script type="text/javascript" src="src/d3.v3.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<style>
+    #chart{font-family:Tahoma;}
+    #chart circle:hover{cursor:pointer;}
+    #box-info{background:#F9F9F9;position:fixed;left:0;bottom:0;width:auto;height:auto;padding:10px;}
+</style>
+</head>
+
+<body>
+    <div id="box-info"></div>
+    <svg id="chart"></svg>
+<script>
+var diameter = 600,
+    format = d3.format(",d"),
+    color = d3.scale.category20();
+
+var bubble = d3.layout.pack()
+                .sort(null)
+                .size([diameter, diameter])
+                .padding(10);
+    
+var svg = d3.select("#chart")
+            .attr("width", diameter)
+            .attr("height", diameter)
+
+d3.json('data/unicorns.json', function(err, data){
+
+    var node = svg.selectAll(".node")
+                .data(bubble.nodes(classes(data))
+                .filter(function(d) { return !d.children; }))
+                .enter()
+                .append("g")
+                    .attr("class", "node")
+                    .attr("transform", function(d) { 
+                        return "translate(" + d.x + "," + d.y + ")"; 
+                    });
+    
+    node.append("circle")
+        .attr("r", function(d) { return d.r; })
+        .style("fill", function(d) { return color(d.className); })
+        .on("mouseover", function(d) { 
+            d3.select(this)
+                .transition()
+                    .duration(200)
+                    .ease("linear")
+                    .style("opacity", .5)
+                    .attr("r", function(d){ return d.r * 1.5; });
+            d3.select(this.parentNode)
+                .select(".name")
+                .style("font-size", function(d) { return (d.r*1.5)/3 })
+        })
+        .on("mouseout", function(d) {
+            d3.select(this)
+                .transition()
+                    .duration(200)
+                    .ease("linear")
+                    .style("opacity", 1)
+                    .attr("r", function(d){ return d.r; });
+        })
+        .on("click", function(d){
+            getCrunchBaseData(d);
+        });
+
+    node.append("text")
+        .attr("class","name")
+        .attr("dy", "0em")
+        .style("font-size", function(d) { return d.r/3 })
+        .style("text-anchor", "middle")
+        .text(function(d) { return d.className.substring(0, d.r); });
+
+/*
+    node.append("text")
+        .attr("dy", "1.3em").attr("class", "price")
+        .style("display","none").style("font-size", "10px").style("text-anchor", "middle")
+        .text(function(d) { return "$" + format(d.value)});
+*/
+});
+
+function classes(root) {
+    var classes = [];
+    function recurse(name, node) {
+        if (node.children)
+            node.children.forEach(function(child) { recurse(node.name, child); });
+        else 
+            classes.push({packageName: name, className: node.name, value: node.price, date: node.date});
+  }
+
+  recurse(null, root);
+  return {children: classes};
+
+} d3.select(self.frameElement).style("height", diameter + "px");  
+    
+/* Get CrunchBase data */
+function getCrunchBaseData(d){
+    var url = "https://api.crunchbase.com/v/2/organization/" + d.className + "?user_key=97a568c71b70e32aec1f13ed4128dd57";
+    $.ajax({
+        url: url,
+        type: 'GET',
+        dataType : 'jsonp'
+
+    }).done(function(data) {
+        var year = data['data']['properties']['founded_on_year'],
+            url = data["data"]["properties"]["homepage_url"],
+            tagline = data['data']['properties']['short_description'];
+        
+        d3.select("#box-info")
+            .html("Nom: " + d.className + "<br/>Valuation: $" + format(d.value) + "<br/>Date: " + year + "<br/> Site: " + url + "<br/> Tagline: " + tagline);
+    });
+}
+    
+</script>
+</body>
+

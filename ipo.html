@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<head>
+    <title>IPOs</title>
+    <script type="text/javascript" src="src/d3.v3.js"></script>
+    <script type="text/javascript" src="src/d3tip.js"></script>
+    
+<style>
+#chart {
+    font-family:Tahoma;
+    color:#DCDCDC;
+    width:100%;
+    height:100%;
+    position: absolute;
+}
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #DCDCDC;
+    color:#DCDCDC;
+}
+.y.axis text {
+    font-size:12px;
+}
+.area {
+    fill: rgba(70, 136, 241,.1);
+    border:1px solid black;
+    stroke: rgba(70, 136, 241,.8);
+    stroke-width:1.5;  
+}
+.grid .tick {
+    stroke: lightgrey;
+    stroke-opacity: 0.3;
+    stroke-width:0.5px;
+}          
+.d3-tip {
+    background-color:rgba(0,0,0,.8);
+    padding:5px;
+    width:120px;
+    color:white;
+    border-radius:3px;
+    line-height: 1;
+    margin:-15px 0 0 0;
+    text-align:center;
+}
+.d3-tip:after{
+    width:100%;
+    content: "\25BC";
+    position: absolute;
+    text-align: center;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.8);
+    display:inline;
+    box-sizing: border-box;
+}      
+.d3-tip.n:after {
+    margin: 1px 0 0 0;
+    top: 100%;
+    left: 0;
+}
+        
+circle{
+    fill:rgba(70, 136, 241,1);
+    stroke-width:1;
+    stroke:rgb(255,255,255);
+}
+circle:hover{
+    cursor: pointer;
+}
+.d3-top span {
+    text-align:center;
+}
+    </style>
+</head>
+<body>
+
+<svg id="chart"></svg>
+
+<script type="text/javascript">
+    /*
+     * Dimensions
+     */
+    var margin = {top: 50, right: 50, bottom: 50, left: 50},
+        tip = d3.tip().attr("class","d3-tip").html(function(d){ return d.year.getFullYear() + " : " + d.value + " IPOs"; }),
+        width = getWidthHeight()[0],
+        height = getWidthHeight()[1];
+    
+    function getWidthHeight(){
+        return [
+            parseInt(d3.select("#chart").style("width")) - margin.left - margin.right,
+            parseInt(d3.select("#chart").style("height")) - margin.top - margin.bottom
+        ];
+    }
+    
+    /* Axes */
+    var formatValue = d3.format("0");
+    var x = d3.time.scale().range([0,width]),
+        y = d3.time.scale().range([height,0]);
+
+    var area = d3.svg.area()
+                .interpolate("monotone")  
+                .x( function(d){ return x(d.year); } )
+                .y0(height)
+                .y1( function(d){ return y(d.value); } );
+    
+    /* Grid */
+    function make_x_axis(){
+        return d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .ticks(Math.max(width/50, 2))
+    }
+
+    function make_y_axis(){
+        return d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .tickFormat(formatValue)
+                .ticks(Math.max(height/50, 2))
+    }
+
+    /* SVG setup */
+    var svg = d3.select("#chart")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform", "translate("+ margin.left + "," + margin.top + ")");
+    svg.call(tip);
+
+/* Data extraction from CSV file */
+d3.csv("data/ipo.csv", function(data) {
+    data.forEach(function(d){
+        d.year = new Date(d.year,0,1),
+        d.value = Number(d.value)
+    });
+    
+    function avg_graph(data){
+        var av = 0;
+        for(var key in data){
+            av = av + data[key].value; 
+        }
+        return av/data.length;
+    }
+    
+    /* Average of IPOs */
+    var line = d3.svg.line()
+        .x( function(d){ return x(d.year) })
+        .y( function() { return y(avg_graph(data))} );
+
+    /* Domain */
+    x.domain(d3.extent(data, function(d) {return d.year;}));
+    y.domain(d3.extent(data, function(d) {return d.value;}));
+
+    /* Draw x,y Axis */
+    svg.append("g")
+            .attr("class","x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(make_x_axis());
+
+    svg.append("g")
+            .attr("class","y axis")
+            .call(make_y_axis())
+        .append("text")
+            .attr("class","x-axis-text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text("Number of Tech IPOs");
+
+    /* Draw Grid */
+    svg.append("g")
+            .attr("class", "x grid")
+            .attr("transform", "translate(0," + height + ")")
+            .call(make_x_axis()
+                .tickSize(-height, 0, 0)
+                .tickFormat(""));
+    svg.append("g")
+            .attr("class", "y grid")
+            .call(make_y_axis()
+                .tickSize(-width, 0, 0)
+                .tickFormat(""));
+
+    /* Area + Line */
+    svg.append("path")
+        .datum(data)
+        .attr("class", "area")
+        .attr("d", area);
+    svg.append("path")
+        .datum(data)
+        .attr("class", "avg")
+        .attr("stroke", "rgba(0,0,0,.7)")
+        .attr("stroke-width", 1.5)
+        .attr("d", line);
+        
+    /* Add circle */
+    var c = svg.selectAll(".dot")
+                .data(data)
+                .enter();
+    c.append("circle") 
+        .attr("cx", function(d) { return x(d.year);})
+        .attr("cy", function(d) { return y(d.value);})
+        .attr("r", Math.max( ((width+height)/3) /150, 2))
+        .on("mouseover", tip.show)
+        .on("mouseout", tip.hide);
+        
+    /* Responsive */
+    function resize() {
+        var width = getWidthHeight()[0],
+        height = getWidthHeight()[1];
+        
+        if(height < 200)
+            svg.select(".x-axis-text").text("");
+        else
+            svg.select(".x-axis-text").text("Number of Tech IPOs");
+        /* Update the range */
+        x.range([0, width]);
+        y.range([height, 0]);
+
+        /* Update the grid */
+        svg.select('.x.grid')
+            .attr("transform", "translate(0," + height + ")")
+            .call(make_x_axis()
+                  .tickSize(-height, 0, 0)
+                  .tickFormat("")
+                  .ticks(Math.max(width/50, 2)))
+        svg.select(".y.grid")
+            .call(make_y_axis()
+                  .tickSize(-width, 0, 0)
+                  .tickFormat("")
+                  .ticks(Math.max(height/50, 2)));
+        
+        /* Update the axis */
+        svg.select('.x.axis')
+            .attr("transform", "translate(0," + height + ")")
+            .call(make_x_axis().ticks(Math.max(width/50, 2)));
+        svg.select('.y.axis')
+            .call(make_y_axis().ticks(Math.max(height/50, 2)));
+        
+        /* Force D3 to recalculate and update the line */
+        svg.select('.area')
+            .attr("d", area.y0(height));
+        svg.select('.avg')
+            .attr("d", line);
+        svg.selectAll("circle")
+            .attr("cx", function(d) { return x(d.year);})
+            .attr("cy", function(d) { return y(d.value);})
+            .attr("r", Math.max( ((width+height)/3) /150, 2));
+    }
+     
+    d3.select(window).on('resize', resize);
+            
+});
+</script>
+</body>
+</html>
